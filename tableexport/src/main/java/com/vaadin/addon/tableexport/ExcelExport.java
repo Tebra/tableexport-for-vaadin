@@ -439,8 +439,7 @@ public class ExcelExport extends TableExport {
         for (int col = 0; col < getPropIds().size(); col++) {
             propId = getPropIds().get(col);
             headerCell = headerRow.createCell(col);
-            headerCell.setCellValue(createHelper.createRichTextString(getTableHolder().getColumnHeader(propId)
-                    .toString()));
+            headerCell.setCellValue(createHelper.createRichTextString(getTableHolder().getColumnHeader(propId).toString()));
             headerCell.setCellStyle(getColumnHeaderStyle(row, col));
 
             final Short poiAlignment = getTableHolder().getCellAlignment(propId);

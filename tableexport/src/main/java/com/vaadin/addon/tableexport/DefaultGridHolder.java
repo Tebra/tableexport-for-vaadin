@@ -1,18 +1,20 @@
 package com.vaadin.addon.tableexport;
 
+import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import com.vaadin.data.HasHierarchicalDataProvider;
+import com.vaadin.data.ValueProvider;
 import com.vaadin.data.provider.Query;
 import com.vaadin.server.SerializableFunction;
+import com.vaadin.shared.ui.grid.renderers.HtmlRendererState;
 import com.vaadin.ui.Grid;
 import com.vaadin.ui.Grid.Column;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.renderers.Renderer;
-import org.apache.poi.ss.usermodel.HorizontalAlignment;
 
 public class DefaultGridHolder implements TableHolder {
 
@@ -123,8 +125,27 @@ public class DefaultGridHolder implements TableHolder {
 
     @Override
     public Object getPropertyValue(Object itemId, Object propId, boolean useTableFormatPropertyValue) {
-    	SerializableFunction valueProvider = getColumn(propId).getValueProvider();
-    	return valueProvider.apply(itemId);
+        final Field getter;
+        Column<?, ?> column = getColumn(propId);
+
+        /* Workaround for Vaadin 8.x private presentationProvider getter -> We have to access it via reflection -- this could be dangerous. FIXME Vaadin API Change */
+        try {
+            getter = Column.class.getDeclaredField("presentationProvider");
+            getter.setAccessible(true);
+
+            SerializableFunction presentationProvider = (ValueProvider) getter.get(column);
+            SerializableFunction valueProvider = column.getValueProvider();
+
+            /* The second part in the if statement is because we don't want the HTML of some checkboxes / icons to be seen in the exported files - ignore presentation providers with HTML state */
+            if (presentationProvider == null || (getRenderer(propId) != null && getRenderer(propId).getStateType().equals(HtmlRendererState.class))) {
+                return valueProvider.apply(itemId);
+            }
+
+            return presentationProvider.apply(valueProvider.apply(itemId));
+
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException("Error retrieving presentation provider from grid renderer! - table export library");
+        }
     }
 
     @Override
