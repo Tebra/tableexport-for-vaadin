@@ -135,16 +135,17 @@ public class DefaultGridHolder implements TableHolder {
 
             SerializableFunction presentationProvider = (ValueProvider) getter.get(column);
             SerializableFunction valueProvider = column.getValueProvider();
+            Object itemIdappliedWithValueProvider = valueProvider.apply(itemId);
 
             /* The second part in the if statement is because we don't want the HTML of some checkboxes / icons to be seen in the exported files - ignore presentation providers with HTML state */
             if (presentationProvider == null || (getRenderer(propId) != null && getRenderer(propId).getStateType().equals(HtmlRendererState.class))) {
-                return valueProvider.apply(itemId);
+                return itemIdappliedWithValueProvider;
             }
 
-            return presentationProvider.apply(valueProvider.apply(itemId));
+            return presentationProvider.apply(itemIdappliedWithValueProvider);
 
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException("Error retrieving presentation provider from grid renderer! - table export library");
+            throw new RuntimeException("Error retrieving presentation provider from grid renderer! - table export library error: "  + e.getMessage());
         }
     }
 
