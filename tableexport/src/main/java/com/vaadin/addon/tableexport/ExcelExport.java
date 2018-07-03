@@ -10,13 +10,25 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.logging.Logger;
-
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CreationHelper;
+import org.apache.poi.ss.usermodel.DataFormat;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.PrintSetup;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellUtil;
 import org.apache.poi.ss.util.RegionUtil;
-
 import com.vaadin.ui.Grid;
 
 /**
@@ -30,7 +42,6 @@ public class ExcelExport extends TableExport {
     /**
      * The Constant serialVersionUID.
      */
-    private static final long serialVersionUID = -8404407996727936497L;
     private static final Logger LOGGER = Logger.getLogger(ExcelExport.class.getName());
 
     /**
@@ -432,18 +443,30 @@ public class ExcelExport extends TableExport {
      * @param row the row
      */
     protected void addHeaderRow(final int row) {
+        int rowErrorCount = 0;
+
         headerRow = sheet.createRow(row);
         Cell headerCell;
         Object propId;
         headerRow.setHeightInPoints(40);
         for (int col = 0; col < getPropIds().size(); col++) {
             propId = getPropIds().get(col);
+
+            if(propId == null) {
+                rowErrorCount++;
+                continue;
+            }
+
             headerCell = headerRow.createCell(col);
             headerCell.setCellValue(createHelper.createRichTextString(getTableHolder().getColumnHeader(propId).toString()));
             headerCell.setCellStyle(getColumnHeaderStyle(row, col));
 
             final Short poiAlignment = getTableHolder().getCellAlignment(propId);
             CellUtil.setAlignment(headerCell, HorizontalAlignment.forInt(poiAlignment));
+        }
+
+        if (rowErrorCount != 0) {
+            throw new RuntimeException("Grid export incomplete, some column data will be missing. Did you forget to set the id to every grid column?");
         }
     }
 
