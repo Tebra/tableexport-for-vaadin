@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -609,7 +612,16 @@ public class ExcelExport extends TableExport {
 		    if (!isNumeric(valueType)) {
 		        if (java.util.Date.class.isAssignableFrom(valueType)) {
 		            sheetCell.setCellValue((Date) value);
-		        } else {
+		        }
+            if (java.time.LocalDate.class.isAssignableFrom(valueType)) {
+                LocalDate lDate = (LocalDate) value;
+                sheetCell.setCellValue(Date.from(lDate.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+            }
+            if(java.time.LocalDateTime.class.isAssignableFrom(valueType)) {
+                LocalDateTime lDateTime = (LocalDateTime) value;
+                sheetCell.setCellValue(Date.from(lDateTime.atZone(ZoneId.systemDefault()).toInstant()));
+            }
+            else {
 		            sheetCell.setCellValue(createHelper.createRichTextString(value.toString()));
 		        }
 		    } else {
