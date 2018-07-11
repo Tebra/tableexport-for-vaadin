@@ -47,15 +47,23 @@ public class DefaultGridHolder implements TableHolder {
     }
 
     @Override
-    public Short getCellAlignment(Object propId) {
+    public Short getCellAlignment(Object itemId, Object propId) {
         if (null == heldGrid) {
             return defaultAlignment;
         }
         Renderer<?> renderer = getRenderer(propId);
         if (renderer != null) {
-            if (ExcelExport.isNumeric(renderer.getPresentationType())) {
-            	return HorizontalAlignment.RIGHT.getCode();
+
+          if (itemId != null) {
+            SerializableFunction valueProvider = getColumn(propId).getValueProvider();
+            if (ExcelExport.isNumeric(valueProvider.apply(itemId).getClass())) {
+              return HorizontalAlignment.RIGHT.getCode();
             }
+          }
+
+          if (ExcelExport.isNumeric(renderer.getPresentationType())) {
+            	return HorizontalAlignment.RIGHT.getCode();
+           }
         }
         return defaultAlignment;
     }
@@ -114,10 +122,18 @@ public class DefaultGridHolder implements TableHolder {
     }
 
     @Override
-    public Class<?> getPropertyType(Object propId) {
+    public Class<?> getPropertyType(Object itemId, Object propId) {
         Renderer<?> renderer = getRenderer(propId);
-        if (renderer != null) {
-            return renderer.getPresentationType();
+        if (renderer != null && itemId != null) {
+            SerializableFunction valueProvider = getColumn(propId).getValueProvider();
+            Object columnValueProvider = valueProvider.apply(itemId);
+
+            if (columnValueProvider != null) {
+                return valueProvider.getClass();
+            }
+
+          return renderer.getPresentationType();
+
         } else {
             return String.class;
         }
@@ -131,9 +147,12 @@ public class DefaultGridHolder implements TableHolder {
         /* Workaround for Vaadin 8.x private presentationProvider getter -> We have to access it via reflection -- this could be dangerous. FIXME Vaadin API Change */
         try {
             getter = Column.class.getDeclaredField("presentationProvider");
-            getter.setAccessible(true);
+            SerializableFunction presentationProvider = null;
+            if (getter != null) {
+                getter.setAccessible(true);
+                presentationProvider = (ValueProvider) getter.get(column);
+            }
 
-            SerializableFunction presentationProvider = (ValueProvider) getter.get(column);
             SerializableFunction valueProvider = column.getValueProvider();
             Object itemIdappliedWithValueProvider = valueProvider.apply(itemId);
 
@@ -157,7 +176,7 @@ public class DefaultGridHolder implements TableHolder {
         	return Collections.emptyList();
         }
     }
-    
+
     @Override
     public Collection<?> getItemIds() {
     	return heldGrid.getDataProvider().fetch(new Query<>()).collect(Collectors.toList());

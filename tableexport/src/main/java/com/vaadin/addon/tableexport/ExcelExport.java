@@ -464,7 +464,7 @@ public class ExcelExport extends TableExport {
             headerCell.setCellValue(createHelper.createRichTextString(getTableHolder().getColumnHeader(propId).toString()));
             headerCell.setCellStyle(getColumnHeaderStyle(row, col));
 
-            final Short poiAlignment = getTableHolder().getCellAlignment(propId);
+            final Short poiAlignment = getTableHolder().getCellAlignment(null, propId);
             CellUtil.setAlignment(headerCell, HorizontalAlignment.forInt(poiAlignment));
         }
 
@@ -582,10 +582,10 @@ public class ExcelExport extends TableExport {
      * This method is ultimately used by either addDataRows() or addHierarchicalDataRows() to
      * actually add the data to the Sheet.
      *
-     * @param rootItemId the root item id
+     * @param itemId the item id (can also be root item id)
      * @param row        the row
      */
-    protected void addDataRow(final Sheet sheetToAddTo, final Object rootItemId, final int row) {
+    protected void addDataRow(final Sheet sheetToAddTo, final Object itemId, final int row) {
         final Row sheetRow = sheetToAddTo.createRow(row);
         Object propId;
         Object value;
@@ -593,16 +593,16 @@ public class ExcelExport extends TableExport {
         Cell sheetCell;
         for (int col = 0; col < getPropIds().size(); col++) {
             propId = getPropIds().get(col);
-            value = getTableHolder().getPropertyValue(rootItemId, propId, useTableFormatPropertyValue);
-            valueType = getTableHolder().getPropertyType(propId);
+            value = getTableHolder().getPropertyValue(itemId, propId, useTableFormatPropertyValue);
+            valueType = getTableHolder().getPropertyType(itemId, propId);
             sheetCell = sheetRow.createCell(col);
-            setupCell(sheetCell, value, valueType, propId, rootItemId, row, col);
+            setupCell(sheetCell, value, valueType, propId, itemId, row, col);
         }
     }
 
     protected void setupCell(Cell sheetCell, Object value, Class<?> valueType, Object propId, Object rootItemId, int row, int col) {
         sheetCell.setCellStyle(getCellStyle(propId, rootItemId, row, col, false));
-        Short poiAlignment = getTableHolder().getCellAlignment(propId);
+        Short poiAlignment = getTableHolder().getCellAlignment(rootItemId, propId);
         CellUtil.setAlignment(sheetCell, HorizontalAlignment.forInt(poiAlignment));
         setCellValue(sheetCell, value, valueType, propId);
     }
@@ -653,12 +653,12 @@ public class ExcelExport extends TableExport {
      * not accessible globally.
      *
      * @param propId     the property id
-     * @param rootItemId the root item id
+     * @param itemId the item id
      * @param row        the row
      * @param col        the col
      * @return the data style
      */
-    protected CellStyle getCellStyle(final Object propId, final Object rootItemId, final int row, final int col, final boolean totalsRow) {
+    protected CellStyle getCellStyle(final Object propId, final Object itemId, final int row, final int col, final boolean totalsRow) {
         // get the basic style for the type of cell (i.e. data, header, total)
         if ((rowHeaders) && (col == 0)) {
             if (null == rowHeaderCellStyle) {
@@ -666,7 +666,7 @@ public class ExcelExport extends TableExport {
             }
             return rowHeaderCellStyle;
         }
-        final Class<?> propType = getTableHolder().getPropertyType(propId);
+        final Class<?> propType = getTableHolder().getPropertyType(itemId, propId);
         if (totalsRow) {
             if (this.propertyExcelFormatMap.containsKey(propId)) {
                 final short df = dataFormat.getFormat(propertyExcelFormatMap.get(propId));
@@ -727,9 +727,9 @@ public class ExcelExport extends TableExport {
 
 	protected void setupTotalCell(Cell cell, final Object propId, final int currentRow, final int startRow, int col) {
 		cell.setCellStyle(getCellStyle(propId, currentRow, startRow, col, true));
-		Short poiAlignment = getTableHolder().getCellAlignment(propId);
+		Short poiAlignment = getTableHolder().getCellAlignment(null, propId);
 		CellUtil.setAlignment(cell, HorizontalAlignment.forInt(poiAlignment));
-		Class<?> propType = getTableHolder().getPropertyType(propId);
+		Class<?> propType = getTableHolder().getPropertyType(null, propId);
 		if (isNumeric(propType)) {
 			CellRangeAddress cra = new CellRangeAddress(startRow, currentRow - 1, col, col);
 		    if (isHierarchical()) {
@@ -854,14 +854,7 @@ public class ExcelExport extends TableExport {
      * @return the cell style
      */
     protected CellStyle defaultTotalsDoubleCellStyle(final Workbook wb) {
-        CellStyle style;
-        style = wb.createCellStyle();
-        style.setAlignment(HorizontalAlignment.CENTER);
-        style.setVerticalAlignment(VerticalAlignment.CENTER);
-        style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
-        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-        style.setDataFormat(doubleDataFormat);
-        return style;
+        return createDefaultNumericCellStyle(wb, doubleDataFormat);
     }
 
     /**
@@ -872,6 +865,10 @@ public class ExcelExport extends TableExport {
      * @return the cell style
      */
     protected CellStyle defaultTotalsIntegerCellStyle(final Workbook wb) {
+        return createDefaultNumericCellStyle(wb, integerDataFormat);
+    }
+
+    private CellStyle createDefaultNumericCellStyle(Workbook wb, Short integerDataFormat) {
         CellStyle style;
         style = wb.createCellStyle();
         style.setAlignment(HorizontalAlignment.CENTER);

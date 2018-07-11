@@ -30,7 +30,7 @@
       <module name="tableexport-for-vaadin" target="1.8" />
       <module name="tableexport-for-vaadin (1)" target="1.7" />
       <module name="tableexport-for-vaadin-demo" target="1.8" />
-      <module name="tableexport-for-vaadin-root" target="1.5" />
+      <module name="tableexport-for-vaadin-root" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>
