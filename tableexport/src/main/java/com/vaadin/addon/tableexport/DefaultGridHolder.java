@@ -56,7 +56,8 @@ public class DefaultGridHolder implements TableHolder {
 
           if (itemId != null) {
             SerializableFunction valueProvider = getColumn(propId).getValueProvider();
-            if (ExcelExport.isNumeric(valueProvider.apply(itemId).getClass())) {
+              Object providerObject = valueProvider.apply(itemId);
+              if (providerObject != null && ExcelExport.isNumeric(providerObject.getClass())) {
               return HorizontalAlignment.RIGHT.getCode();
             }
           }
